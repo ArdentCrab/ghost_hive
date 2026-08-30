@@ -1,0 +1,60 @@
+---
+description: Allowed modules, states, roles, flows. Nothing else.
+alwaysApply: true
+---
+
+# Allowed surface (whitelist)
+
+## Devices / roles
+
+PSP = kernel. Laptop Noah = worker. Phone Noah = mobile alert + sensor. Family laptop/phone = sensor only. NAS = safe. Router = net sensor. Mines = sibling.
+
+Topology: 1 kernel, 1 worker, 1 safe, 1–8 sensors, 1 router, 1–N mines.
+
+- TETACT is peer behavior (§46), not a PSP module. No WLAN-Monitor-Mode.
+
+## PSP modules only
+
+ghost-core, ghost-terminal, ghost-scanner, ghost-vault, ghost-heartbeat, ghost-policy, ghost-stealth, ghost-ir, ghost-down, ghost-peek.
+
+## PSP states only
+
+game_mode, terminal_mode, ghost_down, danger_mode, low_power_mode. Watch-UI is the live display on terminal_mode, not a new state. ghost_peek is a transition, not a standing extra mode unless the spec names that hop.
+
+Debug-CLI MAY exist behind a chord. Live EBOOT default is Watch (four pages), no prompt.
+
+Forbidden: game_mode → danger_mode, ghost_down → game_mode. Role upgrades (worker→kernel, sensor→worker, mine→kernel/worker) are forbidden.
+
+## Ghost Down is global (Noah)
+
+ghost_down is hive-wide OS/service halt, not a PSP-only mode. HMAC-I / MITM with bad MAC: drop; evidence once/60s; P15 one alert after 3 fails. Never ghost_down. On attack (replay, false peer, compromised worker, root mismatch, vault corrupt):
+
+- PSP: radio off, Game-Look, State ghost_down, Root bleibt, Logs intern, kein Peer-TX. Peek passiv.
+- Worker: KillFrame → OS-Halt (Host-Sim: Prozess tot).
+- Phone/Sensor: KillFrame → Gerät/Prozess tot, Funk aus.
+- Router: Dienste aus, Ports zu (Host-Sim: Prozess tot).
+- NAS: Snapshot/Flush zuerst, dann Prozesse aus, Shares weg.
+- Mines: kein RX; sterben mit Host; no new trips.
+- Vault: freeze. Corrupt → safe_mode.
+- Root: no new peers. Kill only after snapshot, never against PSP.
+
+Do not invent a Lock device state. Shutdown command remains GhostDownStart. HeartbeatMiss alone does not enter Ghost Down. The only added Event type is TelemetryUpdate (SPEC-v2).
+
+## Hard prohibitions
+
+- PSP: no active scan in game_mode; no auto-enroll; never WPA2/WPA3 client; never honeypot.
+- Worker MUST NOT block. Sensor MUST NOT write. NAS MUST NOT alarm. Router MUST NOT configure.
+- Only PSP decides (D). Mines: send-only, no RX, no policies, monotonic counter, TOTP 60–120s.
+- ACK only on bidirectional links; timeout 1–2s. Replay-guard: 64 entries/mine; replay → block mine.
+- Worker time anchor only if trust_level ≥ 2.
+
+## Data / pipeline
+
+Device/Event/Log/Policy/Mine as 1.7.3 §14 plus SPEC-v2 telemetry fields and TelemetryUpdate payload.
+Capabilities as §13 only (no new capability).
+Policies P01–P16 (P16 LogOnly, extra 0).
+Decision: receive → validate → replay_guard → enrich → classify → policy → priority → fallback → escalation → route → store → ack.
+
+## Style
+
+C/C++: static where possible, explicit buffers, free scanner buffers immediately, no RTTI/exceptions-as-control-flow, no third-party frameworks unless Noah approves.

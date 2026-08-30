@@ -1,0 +1,26 @@
+# Secrets / stick / bind material (never commit)
+k/root.key
+**/root.key
+**/peer.bind
+*.key
+.env
+.env.*
+
+# Build artifacts
+*.elf
+*.o
+*.a
+*.PBP
+EBOOT.PBP
+psp_ms0/
+/tmp/
+
+# Lab runtime
+controller/*.db
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+*.swp
+*~

@@ -1,0 +1,566 @@
+{
+  "status": "implemented",
+  "hudVersion": "v3-ultra-max-super-comfort",
+  "titlePrefixStays": "[GHv2]",
+  "buildGate": "v3 HUD in watch_hud.cpp + hud_preview.ts. make test then make eboot.",
+  "law": {
+    "noNewModule": true,
+    "noNewPspState": true,
+    "noNewEvent": true,
+    "noNewPolicy": true,
+    "noInventedMetrics": true,
+    "ramOnly": true,
+    "hmacINeverDown": true,
+    "note": "Nur Zeilen kombinieren / SDK-Zeilen streichen. Keine neuen Device-Felder."
+  },
+  "meta": {
+    "raster": {
+      "cols": 48,
+      "rows": 24,
+      "glyph": "9x11",
+      "ascii": "0x20-0x7E"
+    },
+    "absentLiteral": "--",
+    "modes": {
+      "Watch": "vier Seiten, Live-RAM",
+      "Down": "Ghost-Engine, Watch bleibt, STATE:Down, Eintritt Kernel-Seite",
+      "Black": "komplett leer, nur O zurück, Pipeline weiter"
+    }
+  },
+  "chrome": {
+    "titlePattern": "[GHv2] PAGE:<Hive|Kernel|Net|Peer> STATE:<Watch|Down>",
+    "titlePad": 48,
+    "separator": "------------------------------------------------",
+    "separatorLen": 48,
+    "pages": [
+      "Hive",
+      "Kernel",
+      "Net",
+      "Peer"
+    ],
+    "states": [
+      "Watch",
+      "Down"
+    ]
+  },
+  "removedFromHud": {
+    "reason": "PSP-SDK-Theater, kein Hive-Signal",
+    "labels": [
+      "PSP",
+      "Clock",
+      "Battery",
+      "WLAN"
+    ]
+  },
+  "forbiddenNeverOnHud": [
+    "HMAC-Hex payload[88..127]",
+    "TelemetryMagic 0x42",
+    "peer.bind 112 Bytes",
+    "vaultPerPeer",
+    "ackBudgetPerSec as raw constant line",
+    "telemRateSec",
+    "heartbeatIntervalSec",
+    "heartbeatMissLimit",
+    "scanBuffer",
+    "Policy-IDs P01-P16",
+    "Policy-Names",
+    "Pipeline-Results",
+    "Capability-Bit-Namen (nur hex in Caps)",
+    "Severity enum",
+    "Permissions enum"
+  ],
+  "v3": {
+    "hive": {
+      "goal": "Roster-Intelligenz: HB+Drop sichtbar; Census ok/pend/blk + hive-wide hbmiss/drop; Alert+Last eine Zeile",
+      "lines": [
+        {
+          "label": "Hive",
+          "values": [
+            "empty",
+            "danger",
+            "down",
+            "block",
+            "warn",
+            "pend",
+            "ok"
+          ]
+        },
+        {
+          "label": "Peers",
+          "was": "n/32 on= pend= blk= sil=",
+          "now": "n/32 ok= pend= blk= hbmiss= drop=",
+          "okMeans": "DeviceState Online count (rename on→ok)"
+        },
+        {
+          "label": "Roles",
+          "pattern": "W{n} P{n} S{n} R{n} N{n} M{n}"
+        },
+        {
+          "label": "Alert",
+          "was": "down | danger id | block id | hmac-i | vault-safe | --",
+          "now": "same first token + last={evShort} {id<=8}",
+          "example": "danger 3 last=Mine 3",
+          "ifQuiet": "-- last=Telem W or -- last=--"
+        },
+        {
+          "label": "HMAC-I",
+          "kind": "uint count"
+        },
+        {
+          "label": "Ack",
+          "kind": "pending ACK uint"
+        },
+        {
+          "label": "HBMiss",
+          "kind": "sum miss_count"
+        },
+        {
+          "label": "Time",
+          "pattern": "YYYY-MM-DD HH:MM UTC"
+        },
+        {
+          "label": "roster",
+          "was": "id role st age=N",
+          "now": "id roleTag st age=N hb=X drop=Y",
+          "maxRows": 11,
+          "overflow": "+N",
+          "clip": 48
+        }
+      ],
+      "droppedStandaloneLast": "Last-Zeile entfällt; Inhalt in Alert last="
+    },
+    "kernel": {
+      "goal": "Ghost-Flags, kein SDK; kombinierte Down/Vault/Bind",
+      "keep": [
+        "IBSS",
+        "Radio",
+        "Kernel",
+        "Arming",
+        "Vault",
+        "Safe",
+        "Keys",
+        "Auth",
+        "Bind",
+        "Down",
+        "Phase",
+        "Snap",
+        "Flush",
+        "Kill",
+        "Policy",
+        "Peek",
+        "HMAC-I"
+      ],
+      "combined": [
+        {
+          "label": "Down",
+          "pattern": "{view} {phase} kill={yes|no} danger={on|off}",
+          "example": "active freeze kill=no danger=off"
+        },
+        {
+          "label": "Vault",
+          "pattern": "{n}/64 safe={yes|no}",
+          "example": "3/64 safe=yes"
+        },
+        {
+          "label": "Bind",
+          "pattern": "{yes|no} auth={yes|no} keys={yes|no}",
+          "example": "yes auth=yes keys=yes"
+        }
+      ],
+      "stillOwnLines": [
+        "IBSS",
+        "Radio",
+        "Kernel",
+        "Arming",
+        "Snap",
+        "Flush",
+        "Policy",
+        "Peek",
+        "HMAC-I"
+      ]
+    },
+    "net": {
+      "goal": "Scanner + Anti-Hack + Minen maximale Dichte",
+      "keep": [
+        "UDP",
+        "Pin",
+        "ReplayW",
+        "AckBd",
+        "IP",
+        "Scan",
+        "Twin",
+        "XAP",
+        "Ap1",
+        "Ap2",
+        "Mines",
+        "Replay",
+        "Alerts",
+        "Drift",
+        "WorkerSync",
+        "HBMiss",
+        "Last",
+        "Time",
+        "IBSS"
+      ],
+      "combined": [
+        {
+          "label": "Ap1",
+          "pattern": "{ssid} r={rssi} ch={ch} {enc} twin={yes|no}",
+          "twinPerAp": "yes if this AP ssid is GHSTHIVE AND hive ssid count>=2"
+        },
+        {
+          "label": "Ap2",
+          "pattern": "same as Ap1"
+        },
+        {
+          "label": "Replay",
+          "pattern": "{tracked}/64 blk={yes|no} mines={n}",
+          "example": "12/64 blk=yes mines=3"
+        },
+        {
+          "label": "Sync",
+          "was": "Drift + WorkerSync two lines",
+          "pattern": "drift={+|-}Ns|{--} worker={trust>=2|--}",
+          "example": "drift=+2s worker=trust>=2"
+        }
+      ],
+      "droppedStandalone": [
+        "Mines as own line if folded into Replay",
+        "Drift own line",
+        "WorkerSync own line"
+      ]
+    },
+    "peer": {
+      "goal": "Anti-Hack + Komfort-Telemetrie; sechs Messzeilen → eine Telem-Zeile",
+      "keep": [
+        "idx",
+        "DevN",
+        "Status",
+        "Trust",
+        "Last",
+        "Age",
+        "Cap",
+        "Tag",
+        "HB",
+        "Drop",
+        "RAM",
+        "CPU",
+        "GPU",
+        "Traffic",
+        "Battery",
+        "WiFi"
+      ],
+      "combined": [
+        {
+          "label": "State",
+          "was": "Status + Trust + HB",
+          "pattern": "{peerStatus} trust={0-3} hb={n|--}",
+          "example": "ok trust=3 hb=0"
+        },
+        {
+          "label": "Caps",
+          "was": "Cap + Tag",
+          "pattern": "{hhhh} tag={hh}",
+          "example": "0003 tag=0a"
+        },
+        {
+          "label": "Telem",
+          "was": "RAM CPU GPU Traffic Battery WiFi",
+          "pattern": "ram={n|--} cpu={n|--} gpu={n|--} n={kbps|--} b={pct|--} w={mbit|--}",
+          "example": "ram=512 cpu=12 gpu=-- n=0 b=88 w=54",
+          "clip": 48,
+          "nMeans": "traffic_kbps",
+          "bMeans": "battery_percent",
+          "wMeans": "wifi_mbit"
+        }
+      ],
+      "stillOwnLines": [
+        "DevN id= role=",
+        "Last",
+        "Age",
+        "Drop",
+        "idx"
+      ],
+      "empty": "idx: 0/0 only"
+    },
+    "kernelDown": {
+      "goal": "Down-Engine Transparenz, kombinierte Engine+Replay/Ack",
+      "keep": [
+        "Arming",
+        "Vault",
+        "Down",
+        "Phase",
+        "Snap",
+        "Flush",
+        "Kill",
+        "Policy",
+        "Timer",
+        "GameLook",
+        "Danger",
+        "Replay",
+        "AckBd",
+        "Hive",
+        "Peers",
+        "Alert"
+      ],
+      "combined": [
+        {
+          "label": "Down",
+          "pattern": "active {phase} kill={yes|no} danger={on|off}",
+          "example": "active freeze kill=no danger=off"
+        },
+        {
+          "label": "Replay",
+          "pattern": "{tracked} ack={n}/8",
+          "example": "12 ack=2/8"
+        }
+      ],
+      "const": {
+        "GameLook": "off"
+      }
+    }
+  },
+  "layouts48": {
+    "hiveWatch": [
+      "[GHv2] PAGE:Hive STATE:Watch                    ",
+      "------------------------------------------------",
+      "Hive: ok                                        ",
+      "Peers: 7/32 ok=5 pend=1 blk=1 hbmiss=3 drop=12  ",
+      "Roles: W1 P1 S1 R1 N1 M2                        ",
+      "Alert: danger 3 last=Mine 3                     ",
+      "HMAC-I: 0                                       ",
+      "Ack: 1                                          ",
+      "HBMiss: 3                                       ",
+      "Time: 2026-08-29 21:30                          ",
+      "W        W ok age=2s hb=0 drop=0                ",
+      "3        M dng age=1s hb=0 drop=0               "
+    ],
+    "kernelWatch": [
+      "[GHv2] PAGE:Kernel STATE:Watch                  ",
+      "------------------------------------------------",
+      "IBSS: GHSTHIVE (ON)                             ",
+      "Radio: on                                       ",
+      "Kernel: active                                  ",
+      "Arming: locked                                  ",
+      "Down: locked idle kill=no danger=off            ",
+      "Vault: 3/64 safe=no                             ",
+      "Bind: yes auth=yes keys=yes                     ",
+      "Snap: 0                                         ",
+      "Flush: pending                                  ",
+      "Policy: ok                                      ",
+      "Peek: off                                       ",
+      "HMAC-I: 0                                       "
+    ],
+    "netWatch": [
+      "[GHv2] PAGE:Net STATE:Watch                     ",
+      "------------------------------------------------",
+      "IBSS: GHSTHIVE (ON)                             ",
+      "UDP: 17471                                      ",
+      "Pin: GHSTHIVE                                   ",
+      "ReplayW: 64                                     ",
+      "AckBd: 2/8                                      ",
+      "IP: 10.17.47.1                                  ",
+      "Scan: 2                                         ",
+      "Twin: yes                                       ",
+      "XAP: 0                                          ",
+      "Ap1: GHSTHIVE r=-40 ch=6 open twin=yes          ",
+      "Ap2: GHSTHIVE r=-70 ch=11 wpa2 twin=yes         ",
+      "Replay: 12/64 blk=yes mines=3                   ",
+      "Alerts: 0                                       ",
+      "HBMiss: 0                                       ",
+      "Sync: drift=+2s worker=trust>=2                 ",
+      "Last: Telem W                                   ",
+      "Time: 2026-08-29 21:30                          "
+    ],
+    "peerWatch": [
+      "[GHv2] PAGE:Peer STATE:Watch                    ",
+      "------------------------------------------------",
+      "Dev1: id=W role=Worker                          ",
+      "State: ok trust=3 hb=0                          ",
+      "Last: 21:30                                     ",
+      "Age: 2s                                         ",
+      "Drop: 0                                         ",
+      "Caps: 0003 tag=0a                               ",
+      "Telem: ram=512 cpu=12 gpu=-- n=0 b=88 w=54      ",
+      "idx: 1/3                                        "
+    ],
+    "kernelDown": [
+      "[GHv2] PAGE:Kernel STATE:Down                   ",
+      "------------------------------------------------",
+      "Down: active freeze kill=no danger=off          ",
+      "Timer: 0                                        ",
+      "Arming: locked                                  ",
+      "Vault: 3/64 safe=no                             ",
+      "Snap: 1                                         ",
+      "Flush: pending                                  ",
+      "Policy: ok                                      ",
+      "GameLook: off                                   ",
+      "Replay: 12 ack=0/8                              ",
+      "Hive: down                                      ",
+      "Alert: down last=GDStart kernel                 "
+    ]
+  },
+  "vocabularies": {
+    "hiveHeadline": [
+      "empty",
+      "danger",
+      "down",
+      "block",
+      "warn",
+      "pend",
+      "ok"
+    ],
+    "deviceStatusRoster": [
+      "ok",
+      "pend",
+      "deg",
+      "off",
+      "blk",
+      "sil",
+      "down",
+      "dng",
+      "sus",
+      "?"
+    ],
+    "deviceStatusPeer": [
+      "ok",
+      "pending",
+      "degraded",
+      "offline",
+      "unknown",
+      "suspect",
+      "blocked",
+      "down",
+      "danger",
+      "silent",
+      "?"
+    ],
+    "rolesFull": [
+      "Worker",
+      "Phone",
+      "Kernel",
+      "Safe",
+      "Sensor",
+      "Router",
+      "Mine",
+      "?"
+    ],
+    "rolesCensusTags": [
+      "W",
+      "P",
+      "S",
+      "R",
+      "N",
+      "M"
+    ],
+    "alertHead": [
+      "--",
+      "down",
+      "danger",
+      "block",
+      "hmac-i",
+      "vault-safe"
+    ],
+    "lastEventShort": [
+      "Scan",
+      "Seen",
+      "Lost",
+      "Prof",
+      "Anom",
+      "PViol",
+      "Bak",
+      "Alert",
+      "HBeat",
+      "HMiss",
+      "Role",
+      "Cfg",
+      "GDStart",
+      "GDEnd",
+      "Peek",
+      "Dng+",
+      "Dng-",
+      "Mine",
+      "Telem",
+      "?"
+    ],
+    "wifiEnc": [
+      "open",
+      "wep",
+      "wpa",
+      "wpa2",
+      "wpa3",
+      "?"
+    ],
+    "arming": [
+      "locked",
+      "observe",
+      "armed",
+      "idle"
+    ],
+    "downPhase": [
+      "idle",
+      "freeze",
+      "snapshot",
+      "flush",
+      "kill"
+    ],
+    "yesNo": [
+      "yes",
+      "no"
+    ],
+    "onOff": [
+      "on",
+      "off"
+    ]
+  },
+  "v2ShippedReference": {
+    "note": "Ist-Stand im EBOOT bis Nod+Build. Nicht löschen, Diff zu v3.",
+    "hivePeersWas": "n/32 on= pend= blk= sil=",
+    "hiveRosterWas": "id role st age=",
+    "kernelHadSdk": [
+      "PSP 1004",
+      "Clock",
+      "Battery SDK",
+      "WLAN SDK"
+    ],
+    "peerHadSixMetricLines": [
+      "RAM",
+      "CPU",
+      "GPU",
+      "Traffic",
+      "Battery",
+      "WiFi"
+    ]
+  },
+  "next": [
+    "make test + test_v2_final",
+    "make eboot, PSP laden"
+  ],
+  "hiveBudget": {
+    "chrome": 2,
+    "summaryBlock": 8,
+    "summaryLabels": [
+      "Hive",
+      "Peers",
+      "Roles",
+      "Alert",
+      "HMAC-I",
+      "Ack",
+      "HBMiss",
+      "Time"
+    ],
+    "rosterMaxRows": 11,
+    "overflowLine": 1,
+    "formula": "chrome(2)+summary(8)+min(n,11 or 10+overflow) <= 24",
+    "maxTotal": 21
+  },
+  "roleTags": {
+    "W": "Worker",
+    "P": "Phone",
+    "S": "Sensor",
+    "R": "Router",
+    "N": "Safe",
+    "M": "Mine",
+    "K": "Kernel"
+  }
+}

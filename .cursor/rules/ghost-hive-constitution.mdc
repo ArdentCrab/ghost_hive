@@ -1,0 +1,31 @@
+---
+description: Ghost Hive v2 live spec. v1 Watch overlay is archive where v2 is silent.
+alwaysApply: true
+---
+
+# Ghost Hive Constitution — SPEC v2
+
+[`SPEC.md`](SPEC.md) v1.7.3 = frozen MVP-Archiv. [`SPEC-v1.md`](SPEC-v1.md) = Watch-v1-Archiv. **Live:** [`SPEC-v2.md`](SPEC-v2.md).
+
+## MUST
+
+- Implement named v2 items only when Noah orders code. Until then, running tree may still be v1 Watch + 1.7.3 kernel.
+- On technical decisions: SPEC-v2 first, then SPEC-v1 for UI chrome not overridden, then SPEC.md bits.
+- Watch remains display in `terminal_mode`. Telemetry never Down/Kill/Alert (P16 LogOnly).
+- Stay local. RAM ≤ 24 MB. Root ciphertext. TETACT not a PSP module. HMAC-I never Down. EBOOT arming locked.
+
+## MUST NOT
+
+- Add modules, states, capabilities, or extra Event types beyond `TelemetryUpdate`.
+- Add policies beyond P16.
+- Auto-enroll from telemetry. Mines/NAS/Kernel MUST NOT send TelemetryUpdate.
+- Invent peer metrics; Absent sentinel → `--`.
+- Use UDP opcode 0x42 as Event.type (magic is payload[0] only).
+- Honeypot, `ghost_config.json`, XMB launcher, Watch lock.
+
+## Decision order
+
+1. `SPEC-v2.md`
+2. `SPEC-v1.md` if v2 is silent
+3. `SPEC.md` bit-details
+4. Ask Noah

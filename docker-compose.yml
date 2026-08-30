@@ -1,0 +1,10 @@
+# Ghost Attack Lab — isolated. No host network, no published ports, no LAN IPs.
+# Everything shares one container so engines may only use 127.0.0.1.
+
+services:
+  attack-lab:
+    build: .
+    network_mode: none
+    stdin_open: false
+    tty: false
+    restart: "no"
