@@ -1,0 +1,17 @@
+{
+  "require_signatures": true,
+  "kill_policy": { "require_signatures": true },
+  "hive_members": [
+    { "id": "W", "type": "worker" },
+    { "id": "P", "type": "phone" },
+    { "id": "R", "type": "router" },
+    { "id": "N", "type": "safe" },
+    { "id": "F", "type": "sensor" },
+    { "id": "S", "type": "sensor" },
+    { "id": "X", "type": "mine" },
+    { "id": "ML", "type": "mine" },
+    { "id": "MP", "type": "mine" },
+    { "id": "MN", "type": "mine" },
+    { "id": "MR", "type": "mine" }
+  ]
+}

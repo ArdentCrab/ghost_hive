@@ -1,0 +1,8 @@
+kernel  PSP          (kein Peer)
+W       Laptop Noah  /tmp/ghost_laptop 10.17.47.1 W
+P       Handy Noah   /tmp/ghost_phone  10.17.47.1 P
+N       NAS Safe     /tmp/ghost_nas    10.17.47.1 N
+R       Router       /tmp/ghost_router 10.17.47.1 R
+Wire    IBSS GHSTHIVE open, UDP 17471, Kernel 10.17.47.1
+Bind    nur 112 Byte peer.bind nach /tmp/ghost_hive/peer.bind mode 600
+Verbot  root.key, ghost_keyd, WPA2-Join, decoy/honeypot

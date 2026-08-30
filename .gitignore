@@ -20,6 +20,11 @@ controller/*.db
 __pycache__/
 *.pyc
 
+deploy/ghost_hive/bin/*
+!deploy/ghost_hive/bin/README.md
+deploy/ghost_hive/live/*.PBP
+deploy/ghost_hive/peer.bind
+
 # OS / editor
 .DS_Store
 *.swp

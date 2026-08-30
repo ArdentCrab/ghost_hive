@@ -1,0 +1,25 @@
+Ghost:Hive — Live v2 (SPEC-v2)
+================================
+
+Kopfzeile Watch: ghost:hive   Titel: [GHv2] PAGE:… STATE:Watch|Down
+
+Stick-Pfad (Windows):  E:\ghost_hive\
+PSP-Pfad:              ms0:/ghost_hive/   (peer.bind nur 112 B, kein root.key)
+
+Schnellstart
+------------
+1. WSL:  make peers && make eboot
+2. WSL:  make ghost-hive          # füllt deploy/ghost_hive/bin + live/
+3. Alles aus deploy/ghost_hive/ auf den USB-Stick kopieren (Ordner ghost_hive).
+4. peer.bind (112 Byte) vom PSP nach Stick-Root legen (fetch_bind.py).
+5. Windows: hive_gate.cmd watch     # Worker+Relay nur mit Stick
+6. PSP:    EBOOT aus live/ starten  # Watch Default, kein Prompt
+
+Verboten auf dem Stick
+----------------------
+root.key, WPA-Join, Mini-EBOOT, Duplikat-Software.
+
+Tests (Host)
+------------
+make test      # Regression
+make redteam   # 2001 Hive-Peer-Angriffe, T1/T2/T₃
