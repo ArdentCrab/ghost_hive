@@ -73,7 +73,7 @@ PEER_XPORT = \
 	$(PSP)/ghost_ir.cpp \
 	$(PSP)/psp_time.cpp
 
-.PHONY: test host mini eboot peers pack-live ghost-hive lab lab-invariants lab-sim lab-engines lab-fuzz lab-smoke lab-test-phase lab-24h redteam
+.PHONY: test host mini eboot peers pack-live ghost-hive live lab lab-invariants lab-sim lab-engines lab-fuzz lab-smoke lab-test-phase lab-24h redteam
 
 test: export GHOST_DOWN_ARMED=1
 test:
@@ -308,12 +308,17 @@ GH_DEPLOY = deploy/ghost_hive
 GH_BINS = ghost_laptop ghost_relay ghost_phone ghost_nas ghost_router ghost_family ghost_mines
 
 ghost-hive: peers
-	mkdir -p $(GH_DEPLOY)/bin $(GH_DEPLOY)/live
+	mkdir -p $(GH_DEPLOY)/bin $(GH_DEPLOY)/live $(GH_DEPLOY)/ui $(GH_DEPLOY)/stick
 	cp scripts/hive_gate.py $(GH_DEPLOY)/hive_gate.py
 	@for b in $(GH_BINS); do cp /tmp/$$b $(GH_DEPLOY)/bin/$$b; done
 	@if [ -f $(PSP)/EBOOT.PBP ]; then cp $(PSP)/EBOOT.PBP $(GH_DEPLOY)/live/EBOOT.PBP; \
 	else echo "Hinweis: make eboot fuer live/EBOOT.PBP"; fi
 	@echo "ghost:hive deploy -> $(GH_DEPLOY)/"
+
+# One-click stick: peers + EBOOT + scripts + optional peer.bind
+live: peers
+	@test -f $(PSP)/EBOOT.PBP || $(MAKE) eboot
+	python3 scripts/pack_stick.py
 
 peers:
 	$(CXX) $(CXXFLAGS) $(PEER_INC) src/laptop/main.cpp $(LAPTOP_MODS) src/mine/mine.cpp \

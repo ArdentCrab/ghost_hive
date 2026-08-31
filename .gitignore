@@ -23,7 +23,9 @@ __pycache__/
 deploy/ghost_hive/bin/*
 !deploy/ghost_hive/bin/README.md
 deploy/ghost_hive/live/*.PBP
+deploy/ghost_hive/stick/*.PBP
 deploy/ghost_hive/peer.bind
+deploy/ghost_hive/stick/peer.bind
 
 # OS / editor
 .DS_Store

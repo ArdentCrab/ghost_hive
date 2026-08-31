@@ -317,6 +317,7 @@ Kandidaten (müssen später gegen Spec-Whitelist: kein neues Modul/Event/Policy 
 - [x] `make test` 449 PASS / 0 FAIL + Soak 10k  
 - [x] `hive_redteam` 2001 Angriffe, `make redteam` PASS (T₁/T₂/T₃)  
 - [x] `deploy/ghost_hive/` Stick-Layout (`ghost:hive` Gate, kein `root.key`)  
+- [x] `make live` + `hive_live.cmd` + `auto_peers.py` + `hive_manager.py` (One-Click)  
 - [x] Kein neues PSP-Modul / kein AES / kein zweiter Thread  
 
 **v2 ready** im Sinne dieses Host-Freeze. Hardware-EBOOT bleibt ein Noah-Schritt (`make eboot` auf PSPDEV).
