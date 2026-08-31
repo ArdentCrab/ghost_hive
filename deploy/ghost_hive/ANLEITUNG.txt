@@ -9,6 +9,8 @@ Windows:  hive_live.cmd
 WSL:      ./hive_live.sh
 Oder:     python ghost_v2_final.py live
 
+Live-Day (IBSS Hardware): docs/LIVE_DAY.md
+
 Erstes Mal (PSP)
 ----------------
 1. python ghost_v2_final.py whitelist   (PSP per USB)
