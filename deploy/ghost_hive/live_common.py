@@ -6,6 +6,7 @@ import os
 import socket
 import subprocess
 import sys
+import time
 
 STICK_DIRNAME = "ghost_hive"
 WSL_TMP = "/tmp/ghost_hive"
@@ -138,10 +139,51 @@ def tail_log(name, lines=6):
     return out
 
 
+def manifest_path(stick=None):
+    bases = []
+    if stick is not None:
+        bases.append(stick)
+    bases.extend((HERE, os.path.join(HERE, "stick")))
+    for base in bases:
+        p = os.path.join(base, "devices.manifest")
+        if os.path.isfile(p):
+            return p
+    return os.path.join(HERE, "devices.manifest")
+
+
+def load_manifest_devices(stick=None):
+    cp = configparser.ConfigParser()
+    cp.read(manifest_path(stick))
+    devices = []
+    for section in cp.sections():
+        if not section.startswith("device."):
+            continue
+        devices.append({
+            "name": section[7:],
+            "role": cp.get(section, "role", fallback=section[7:]),
+            "id": cp.get(section, "id", fallback=""),
+            "arch": cp.get(section, "arch", fallback="amd64"),
+            "network": cp.get(section, "network", fallback="relay"),
+            "host": cp.get(section, "host", fallback="local"),
+            "wake": cp.get(section, "wake", fallback="no").lower() in ("yes", "1", "true"),
+            "binary": cp.get(section, "binary", fallback=""),
+            "args": cp.get(section, "args", fallback=""),
+        })
+    return devices
+
+
+def _bin_dir_on_stick(stick):
+    amd64 = os.path.join(stick, "bin", "amd64")
+    flat = os.path.join(stick, "bin")
+    if os.path.isdir(amd64) and os.path.isfile(os.path.join(amd64, "ghost_laptop")):
+        return amd64
+    return flat
+
+
 def sync_bins_from_stick(stick=None):
     if stick is None:
         stick = stick_root()
-    src_bin = os.path.join(stick, "bin")
+    src_bin = _bin_dir_on_stick(stick)
     if not os.path.isdir(src_bin):
         return False
     laptop = os.path.join(src_bin, "ghost_laptop")
@@ -154,6 +196,19 @@ def sync_bins_from_stick(stick=None):
     return True
 
 
+def bind_ttl_sec(cp=None):
+    if cp is None:
+        cp = load_cfg()
+    return cp.getint("gate", "bind_ttl_sec", fallback=900)
+
+
+def write_bind_ttl_wsl(expiry_epoch=None):
+    if expiry_epoch is None:
+        expiry_epoch = int(time.time()) + bind_ttl_sec()
+    wsl("printf '%d\\n' %d > %s/peer.bind.ttl && chmod 600 %s/peer.bind.ttl" %
+        (expiry_epoch, WSL_TMP, WSL_TMP))
+
+
 def sync_bind_from_stick(stick=None):
     if stick is None:
         stick = stick_root()
@@ -163,4 +218,7 @@ def sync_bind_from_stick(stick=None):
     wsl("mkdir -p %s && cp -f %s %s/peer.bind && chmod 600 %s/peer.bind" %
         (WSL_TMP, win_to_wsl(src), WSL_TMP, WSL_TMP))
     rc, n = wsl_out("stat -c %%s %s/peer.bind" % WSL_TMP)
-    return rc == 0 and n == "112"
+    if rc != 0 or n != "112":
+        return False
+    write_bind_ttl_wsl()
+    return True

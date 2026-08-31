@@ -26,10 +26,21 @@ make redteam       # 2001 Peer-Angriffe
 
 Komponenten
 -----------
-hive_gate.py       Stick-Gate (Worker+Relay sync)
-auto_peers.py      Phone/NAS/Router/Family/Mines auto-start
+hive_gate.py       Stick-Gate (Worker+Relay sync + R3 wake/bind)
+auto_peers.py      Local WSL peers; remote via manifest
+devices.manifest   Host=local|remote, arch, network ibss|relay
+wake_lan.py        GHST_WAKE v2 Broadcast beim Gate
+bind_serve.py      Whitelist via devices.manifest; 5 req/min/IP; 900s window
+wake/ghost_wake    Termux/Linux Listener (Port 17469)
 ui/hive_manager.py Live-Dashboard (Peers, Logs, Stick)
 ghost.cfg          IBSS GHSTHIVE, Kernel 10.17.47.1, UDP 17471
+
+R3 — echte Geraete (Relay-Pfad)
+-------------------------------
+1. make live  (bin/amd64 + optional bin/arm64)
+2. Stick -> Gate startet bind_serve + wake_lan
+3. Auf Handy/Pi: python wake/ghost_wake.py P bin/arm64/ghost_phone
+4. Geraet holt peer.bind, startet Peer -> Relay -> PSP
 
 Verboten auf Stick: root.key, WPA-Join, Mini-EBOOT
 

@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 
+import configparser
 import os
 import shutil
 import subprocess
@@ -78,6 +79,21 @@ def bind_ok(stick):
     return os.path.isfile(p) and os.path.getsize(p) == 112
 
 
+def gate_ttl_sec(stick):
+    cfg = os.path.join(stick, "ghost.cfg")
+    if os.path.isfile(cfg):
+        cp = configparser.ConfigParser()
+        cp.read(cfg)
+        return cp.getint("gate", "bind_ttl_sec", fallback=900)
+    return 900
+
+
+def sync_bind_ttl(stick):
+    expiry = int(time.time()) + gate_ttl_sec(stick)
+    wsl("printf '%d\\n' %d > %s/peer.bind.ttl && chmod 600 %s/peer.bind.ttl" %
+        (expiry, WSL_TMP, WSL_TMP))
+
+
 def sync_bind(stick):
     src = win_to_wsl(os.path.join(stick, "peer.bind"))
     wsl("mkdir -p %s && cp -f %s %s/peer.bind && chmod 600 %s/peer.bind" %
@@ -86,15 +102,31 @@ def sync_bind(stick):
     if rc != 0 or n != "112":
         print("peer.bind Sync fehlgeschlagen:", n)
         return False
+    sync_bind_ttl(stick)
     return True
 
 
 def wipe_bind():
-    wsl("rm -f %s/peer.bind %s/*.pid" % (WSL_TMP, WSL_TMP), check=False)
+    wsl("rm -f %s/peer.bind %s/peer.bind.ttl %s/*.pid" % (WSL_TMP, WSL_TMP, WSL_TMP), check=False)
+
+
+def manifest_ok(stick):
+    if os.path.isfile(os.path.join(stick, "devices.manifest")):
+        return True
+    here = os.path.dirname(os.path.abspath(__file__))
+    return os.path.isfile(os.path.join(here, "devices.manifest"))
+
+
+def bin_dir_on_stick(stick):
+    amd64 = os.path.join(stick, "bin", "amd64")
+    flat = os.path.join(stick, "bin")
+    if os.path.isdir(amd64) and os.path.isfile(os.path.join(amd64, "ghost_laptop")):
+        return amd64
+    return flat
 
 
 def sync_bins(stick):
-    src_bin = os.path.join(stick, "bin")
+    src_bin = bin_dir_on_stick(stick)
     if not os.path.isdir(src_bin):
         return False
     laptop = os.path.join(src_bin, "ghost_laptop")
@@ -126,10 +158,45 @@ def start_hive():
     print("Hive an: Worker + Relay (Kernel %s)." % KERNEL)
 
 
+def r3_script(stick, name):
+    here = os.path.dirname(os.path.abspath(__file__))
+    for base in (stick, here):
+        p = os.path.join(base, name)
+        if os.path.isfile(p):
+            return win_to_wsl(p)
+    return None
+
+
+def stop_r3():
+    wsl("test -f %s/bind_serve.pid && kill $(cat %s/bind_serve.pid) 2>/dev/null; "
+        "rm -f %s/bind_serve.pid" % (WSL_TMP, WSL_TMP, WSL_TMP), check=False)
+
+
+def start_r3(stick):
+    bs = r3_script(stick, "bind_serve.py")
+    wl = r3_script(stick, "wake_lan.py")
+    if bs is None and wl is None:
+        return
+    if bs and not manifest_ok(stick):
+        print("R3: bind_serve skipped (devices.manifest fehlt)")
+        bs = None
+    wsl("mkdir -p %s/logs" % WSL_TMP)
+    rc, out = wsl_out("test -f %s/bind_serve.pid && kill -0 $(cat %s/bind_serve.pid) 2>/dev/null && echo ok" %
+                      (WSL_TMP, WSL_TMP))
+    if bs and rc != 0:
+        wsl("nohup python3 %s >>%s/logs/bind_serve.log 2>&1 & echo $! >%s/bind_serve.pid" %
+            (bs, WSL_TMP, WSL_TMP))
+        print("R3: bind_serve gestartet (Fenster %ds)." % gate_ttl_sec(stick))
+    if wl:
+        wsl("python3 %s" % wl)
+        print("R3: wake_lan gesendet.")
+
+
 def stop_hive():
     names = " ".join("/tmp/" + n for n in HIVE_PROCS)
     wsl("pkill -f '/tmp/ghost_(laptop|relay|phone|nas|router|family|mines)' || true",
         check=False)
+    stop_r3()
     wipe_bind()
     print("Hive aus: Prozesse tot, Bind aus RAM-Pfad.")
 
@@ -182,6 +249,7 @@ def once():
         start_hive()
     else:
         print("Hive laeuft bereits.")
+    start_r3(stick)
     return 0
 
 

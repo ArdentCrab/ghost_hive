@@ -317,8 +317,24 @@ ghost-hive: peers
 
 # One-click stick: peers + EBOOT + scripts + optional peer.bind
 live: peers
+	@$(MAKE) peers-arm64 || true
 	@test -f $(PSP)/EBOOT.PBP || $(MAKE) eboot
 	python3 scripts/pack_stick.py
+
+PEER_ARM64_DIR = /tmp/arm64
+CXX_ARM64 ?= aarch64-linux-gnu-g++
+
+peers-arm64:
+	@command -v $(CXX_ARM64) >/dev/null 2>&1 || { echo "peers-arm64: skip (no $(CXX_ARM64))"; exit 0; }
+	mkdir -p $(PEER_ARM64_DIR)
+	$(CXX_ARM64) $(CXXFLAGS) $(PEER_INC) src/phone/main.cpp src/phone/sensor.cpp \
+		src/laptop/alert.cpp src/laptop/peer_keys.cpp src/laptop/peer_halt.cpp src/laptop/tetact.cpp src/laptop/host_telem.cpp src/mine/mine.cpp \
+		$(PSP)/ghost_keys.cpp $(PSP)/ghost_crypto.cpp $(PSP)/ghost_telemetry.cpp \
+		$(PEER_XPORT) -o $(PEER_ARM64_DIR)/ghost_phone
+	$(CXX_ARM64) $(CXXFLAGS) $(PEER_INC) src/sensor/main.cpp src/phone/sensor.cpp \
+		src/laptop/peer_keys.cpp src/laptop/peer_halt.cpp src/laptop/tetact.cpp src/laptop/host_telem.cpp \
+		$(PSP)/ghost_keys.cpp $(PSP)/ghost_crypto.cpp $(PSP)/ghost_telemetry.cpp \
+		$(PEER_XPORT) -o $(PEER_ARM64_DIR)/ghost_family
 
 peers:
 	$(CXX) $(CXXFLAGS) $(PEER_INC) src/laptop/main.cpp $(LAPTOP_MODS) src/mine/mine.cpp \

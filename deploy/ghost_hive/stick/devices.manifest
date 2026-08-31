@@ -1,0 +1,75 @@
+# Ghost:Hive device manifest — host orchestration only (SPEC-v2).
+# host=local  → WSL on laptop (R2 sim or Worker/Relay IBSS)
+# host=remote → real device; ghost_wake starts peer on LAN wake
+
+[gate]
+wake_port = 17469
+bind_port = 17470
+bind_ttl_sec = 900
+
+[device.relay]
+role = relay
+arch = amd64
+network = ibss
+host = local
+binary = ghost_relay
+args = {kernel}
+
+[device.worker]
+role = worker
+id = W
+arch = amd64
+network = ibss
+host = local
+binary = ghost_laptop
+args = {kernel} W
+
+[device.phone]
+role = phone
+id = P
+arch = arm64
+network = relay
+host = remote
+wake = yes
+binary = ghost_phone
+args = {lan} P
+
+[device.nas]
+role = safe
+id = N
+arch = amd64
+network = relay
+host = remote
+wake = yes
+binary = ghost_nas
+args = {lan} N
+
+[device.router]
+role = router
+id = R
+arch = mips
+network = relay
+host = remote
+wake = yes
+binary = ghost_router
+args = {lan} R
+
+[device.family]
+role = sensor
+id = F
+arch = arm64
+network = relay
+host = remote
+wake = yes
+binary = ghost_family
+args = {lan} F
+
+[device.mines]
+role = mine
+id = ML
+arch = amd64
+network = relay
+host = local
+wake = no
+binary = ghost_mines
+args = {lan} browser id=ML

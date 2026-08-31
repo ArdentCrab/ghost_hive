@@ -1,5 +1,9 @@
 # Ghost Attack Lab
 
+![Ghost Hive CI](https://github.com/ArdentCrab/ghost_hive/actions/workflows/ghost.yml/badge.svg)
+
+Tests + Redteam: on every push (`make test`, `make redteam`).
+
 Offline robustness lab for the **Ghost Simulator** only. Not a security certificate, not a real-network test, not a crypto attack, not a substitute for spec-blind review.
 
 ## Constraints

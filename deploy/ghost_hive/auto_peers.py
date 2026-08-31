@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Auto-start all Hive peers (SPEC-v2). Host-only — no PSP module.
+# Auto-start Hive peers (SPEC-v2). R2 local WSL + R3 remote via wake_lan.
 from __future__ import print_function
 
 import argparse
@@ -12,16 +12,25 @@ if HERE not in sys.path:
 
 import live_common as lc
 
-
-PEERS = (
-    ("relay", "ghost_relay", "{kernel}"),
-    ("worker", "ghost_laptop", "{kernel} W"),
-    ("phone", "ghost_phone", "{lan} P"),
-    ("nas", "ghost_nas", "{lan} N"),
-    ("router", "ghost_router", "{lan} R"),
-    ("family", "ghost_family", "{lan} F"),
-    ("mines", "ghost_mines", "{lan} browser id=ML"),
+PEERS_FALLBACK = (
+    ("relay", "ghost_relay", "{kernel}", "local"),
+    ("worker", "ghost_laptop", "{kernel} W", "local"),
+    ("phone", "ghost_phone", "{lan} P", "local"),
+    ("nas", "ghost_nas", "{lan} N", "local"),
+    ("router", "ghost_router", "{lan} R", "local"),
+    ("family", "ghost_family", "{lan} F", "local"),
+    ("mines", "ghost_mines", "{lan} browser id=ML", "local"),
 )
+
+
+def peer_rows(stick):
+    devices = lc.load_manifest_devices(stick)
+    if not devices:
+        return PEERS_FALLBACK
+    rows = []
+    for d in devices:
+        rows.append((d["name"], d["binary"], d["args"], d["host"]))
+    return rows
 
 
 def require_ready(stick):
@@ -42,9 +51,13 @@ def start_all(lan_ip=None):
     kernel = lc.kernel_ip(cp)
     if lan_ip is None or lan_ip == "":
         lan_ip = lc.detect_lan_ip()
-    print("auto_peers: kernel=%s lan=%s stick=%s" % (kernel, lan_ip, stick))
+    rows = peer_rows(stick)
+    local = [r for r in rows if r[3] == "local"]
+    remote = [r for r in rows if r[3] == "remote"]
+    print("auto_peers: kernel=%s lan=%s stick=%s local=%d remote=%d" %
+          (kernel, lan_ip, stick, len(local), len(remote)))
     ok = 0
-    for name, bin_name, fmt in PEERS:
+    for name, bin_name, fmt, host in local:
         if lc.pid_running(name):
             print("  %s: already running" % name)
             ok += 1
@@ -56,13 +69,19 @@ def start_all(lan_ip=None):
             ok += 1
         else:
             print("  %s: FAILED" % name)
-    print("auto_peers: %d/%d up" % (ok, len(PEERS)))
-    return 0 if ok == len(PEERS) else 1
+    for name, _, _, _ in remote:
+        print("  %s: remote (ghost_wake on device)" % name)
+    print("auto_peers: %d/%d local up" % (ok, len(local)))
+    return 0 if ok == len(local) else 1
 
 
 def stop_all():
-    for name, _, _ in reversed(PEERS):
-        lc.stop_daemon(name)
+    stick = lc.find_stick() or lc.stick_root()
+    rows = peer_rows(stick)
+    lc.stop_daemon("bind_serve")
+    for name, _, _, host in reversed(rows):
+        if host == "local":
+            lc.stop_daemon(name)
     lc.wsl("pkill -f '/tmp/ghost_' 2>/dev/null || true", check=False)
     lc.wsl("rm -f %s/peer.bind" % lc.WSL_TMP, check=False)
     print("auto_peers: stopped")
@@ -74,9 +93,13 @@ def status():
     kernel = lc.kernel_ip(cp)
     lan = lc.detect_lan_ip()
     stick = lc.find_stick()
+    rows = peer_rows(stick or lc.stick_root())
     print("kernel=%s lan=%s stick=%s bind=%s" % (
         kernel, lan, stick or "none", lc.bind_ok(stick) if stick else lc.bind_ok()))
-    for name, _, _ in PEERS:
+    for name, _, _, host in rows:
+        if host == "remote":
+            print("  %-8s remote" % name)
+            continue
         mark = "UP" if lc.pid_running(name) else "down"
         print("  %-8s %s" % (name, mark))
     return 0
